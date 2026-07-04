@@ -1,0 +1,9 @@
+bin/
+obj/
+.vs/
+*.user
+appsettings.Production.json
+service-account*.json
+firebase-service-account.json
+.dotnet/
+.tools/

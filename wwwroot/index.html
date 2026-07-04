@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#12251f">
+  <title>Votação das apresentações</title>
+  <link rel="stylesheet" href="/css/site.css">
+</head>
+<body>
+  <main class="shell">
+    <header class="hero">
+      <span class="eyebrow">Votação ao vivo</span>
+      <h1>Sua nota<br>faz a diferença.</h1>
+      <p>A apresentação escolhida pelo organizador aparecerá aqui automaticamente.</p>
+      <div id="status" class="status">Carregando…</div>
+    </header>
+
+    <section id="vote-panel" class="card" hidden>
+      <form id="vote-form">
+        <div class="active-presentation">
+          <span class="eyebrow">Agora em votação</span>
+          <h2 id="active-title"></h2>
+          <p id="active-presenter"></p>
+        </div>
+        <fieldset>
+          <legend>Sua nota</legend>
+          <div id="scores" class="scores"></div>
+        </fieldset>
+        <button class="primary" type="submit">Confirmar meu voto</button>
+      </form>
+      <p id="feedback" class="feedback" role="status"></p>
+    </section>
+
+    <section id="waiting-panel" class="card waiting-card" hidden>
+      <span class="waiting-check">✓</span>
+      <span class="eyebrow">Tudo certo</span>
+      <h2>Voto confirmado!</h2>
+      <p>Aguarde. A próxima apresentação aparecerá aqui quando o organizador liberar.</p>
+    </section>
+
+    <section id="idle-panel" class="card waiting-card" hidden>
+      <span class="waiting-pulse"></span>
+      <span class="eyebrow">Aguardando</span>
+      <h2>A votação começa em breve</h2>
+      <p>Esta tela será atualizada automaticamente.</p>
+    </section>
+
+    <section id="result-panel" class="card" hidden>
+      <div class="section-heading"><div><span class="eyebrow">Resultado</span><h2>Ranking final</h2></div><span id="total-votes"></span></div>
+      <ol id="ranking" class="ranking"></ol>
+    </section>
+  </main>
+  <script src="/js/vote.js"></script>
+</body>
+</html>

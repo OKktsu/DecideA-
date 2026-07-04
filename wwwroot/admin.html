@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Painel da votação</title>
+  <link rel="stylesheet" href="/css/site.css">
+</head>
+<body>
+  <main class="shell admin-shell">
+    <header class="admin-header">
+      <div><span class="eyebrow">Área do organizador</span><h1>Painel da votação</h1></div>
+      <label class="pin">PIN administrativo <input id="pin" type="password" inputmode="numeric" value="1234"></label>
+    </header>
+
+    <section class="admin-grid">
+      <article class="card control-card">
+        <span class="eyebrow">Controle</span><h2 id="session-title">Nenhuma equipe selecionada</h2>
+        <p id="session-copy">Escolha abaixo qual apresentação o público deve avaliar.</p>
+        <div class="actions"><button id="stop-session" class="secondary">Tirar de votação</button><button id="finish-event" class="primary">Finalizar e mostrar ranking</button><button id="clear-votes" class="danger">Limpar votos</button></div>
+      </article>
+      <article class="card qr-card">
+        <span class="eyebrow">Acesso do público</span><h2>QR Code</h2>
+        <img id="qr-code" alt="QR Code da página de votação">
+        <a id="public-link" target="_blank" rel="noopener"></a>
+      </article>
+    </section>
+
+    <section class="card">
+      <div class="section-heading"><div><span class="eyebrow">Cadastro</span><h2>Apresentações</h2></div></div>
+      <form id="presentation-form" class="inline-form">
+        <input id="title" placeholder="Nome da apresentação" required>
+        <input id="presenter" placeholder="Apresentador(a) — opcional">
+        <button class="primary" type="submit">Adicionar</button>
+      </form>
+      <div id="presentation-list" class="presentation-list"></div>
+    </section>
+
+    <section class="card">
+      <div class="section-heading"><div><span class="eyebrow">Ao vivo</span><h2>Ranking</h2></div><strong id="admin-total"></strong></div>
+      <ol id="admin-ranking" class="ranking"></ol>
+    </section>
+    <p id="admin-feedback" class="toast" role="status"></p>
+  </main>
+  <script src="/js/admin.js"></script>
+</body>
+</html>

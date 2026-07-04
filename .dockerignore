@@ -1,0 +1,9 @@
+.git/
+.vs/
+.dotnet/
+.tools/
+bin/
+obj/
+firebase-service-account.json
+decideai-57900-*.json
+*.user
