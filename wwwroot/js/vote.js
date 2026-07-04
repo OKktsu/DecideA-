@@ -9,10 +9,18 @@ const voterId=localStorage.getItem('voter-id')||makeId();
 localStorage.setItem('voter-id',voterId);
 
 document.querySelector('#scores').innerHTML=Array.from({length:10},(_,i)=>`<span><input id="score-${i+1}" name="score" type="radio" value="${i+1}" required><label for="score-${i+1}">${i+1}</label></span>`).join('');
+let lastActivePresentationId = null;
 
 async function load(){
   const state=await fetch('/api/state').then(r=>r.json());
   const hasActiveVote=state.isOpen&&state.activePresentation;
+
+  if (hasActiveVote && state.activePresentationId !== lastActivePresentationId) {
+    document.querySelector('#vote-form').reset();
+    feedback.textContent = '';
+    lastActivePresentationId = state.activePresentationId;
+  }
+
   const voteKey=hasActiveVote?`voted:${state.roundId}:${state.activePresentationId}`:'';
   const alreadyVoted=hasActiveVote&&localStorage.getItem(voteKey)==='true';
   statusEl.textContent=hasActiveVote?`Votação aberta · ${state.activePresentation.title}`:state.showResults?'Votação encerrada':'Aguardando o organizador';

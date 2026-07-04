@@ -124,13 +124,21 @@ sealed class FirestoreVotingStore : IVotingStore
         await Task.WhenAll(settingsTask, presentationsTask, votesTask);
 
         var settings = ReadSettings(settingsTask.Result);
-        var presentations = presentationsTask.Result.Documents.Select(d => new Presentation(
-            Guid.Parse(d.Id), d.GetValue<string>("title"),
-            d.ContainsField("presenter") ? d.GetValue<string?>("presenter") : null)).ToArray();
-        var votes = votesTask.Result.Documents.Select(d => new
+        var presentations = presentationsTask.Result.Documents.Select(d =>
         {
-            PresentationId = Guid.Parse(d.GetValue<string>("presentationId")),
-            Score = Convert.ToInt32(d.GetValue<long>("score"))
+            var title = d.ContainsField("title") && d.GetValue<object>("title") is string t ? t : "";
+            var presenter = d.ContainsField("presenter") && d.GetValue<object>("presenter") is string p ? p : null;
+            return new Presentation(Guid.Parse(d.Id), title, presenter);
+        }).ToArray();
+        var votes = votesTask.Result.Documents.Select(d =>
+        {
+            var presIdStr = d.ContainsField("presentationId") && d.GetValue<object>("presentationId") is string idStr ? idStr : "";
+            var scoreVal = d.ContainsField("score") ? Convert.ToInt32(d.GetValue<object>("score")) : 0;
+            return new
+            {
+                PresentationId = Guid.TryParse(presIdStr, out var g) ? g : Guid.Empty,
+                Score = scoreVal
+            };
         }).ToArray();
 
         var ranking = presentations.Select(p =>
@@ -148,17 +156,26 @@ sealed class FirestoreVotingStore : IVotingStore
     private static SettingsState ReadSettings(DocumentSnapshot snapshot)
     {
         if (!snapshot.Exists) return new(false, false, Guid.NewGuid(), null);
-        var roundId = snapshot.ContainsField("roundId") && Guid.TryParse(snapshot.GetValue<string>("roundId"), out var parsedRound)
-            ? parsedRound : Guid.NewGuid();
+        
+        Guid roundId = Guid.NewGuid();
+        if (snapshot.ContainsField("roundId"))
+        {
+            var val = snapshot.GetValue<object>("roundId");
+            if (val is string str && Guid.TryParse(str, out var parsedRound))
+                roundId = parsedRound;
+        }
+
         Guid? activeId = null;
         if (snapshot.ContainsField("activePresentationId"))
         {
-            var value = snapshot.GetValue<string?>("activePresentationId");
-            if (Guid.TryParse(value, out var parsedActive)) activeId = parsedActive;
+            var val = snapshot.GetValue<object>("activePresentationId");
+            if (val is string str && Guid.TryParse(str, out var parsedActive))
+                activeId = parsedActive;
         }
+
         return new(
-            snapshot.ContainsField("isOpen") && snapshot.GetValue<bool>("isOpen"),
-            snapshot.ContainsField("showResults") && snapshot.GetValue<bool>("showResults"),
+            snapshot.ContainsField("isOpen") && snapshot.GetValue<object>("isOpen") is bool open && open,
+            snapshot.ContainsField("showResults") && snapshot.GetValue<object>("showResults") is bool show && show,
             roundId,
             activeId);
     }

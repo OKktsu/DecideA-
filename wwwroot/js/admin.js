@@ -28,6 +28,19 @@ function setGlobalLoading(isLoading, message){
   });
   if(isLoading) show(message, true);
 }
+async function handleResponse(response, successMsg) {
+  if (response.ok) {
+    show(successMsg);
+  } else {
+    if (response.status === 401) {
+      show('PIN incorreto.');
+    } else {
+      const body = await response.json().catch(() => ({}));
+      show(body.message || 'Erro no servidor. Tente novamente.');
+    }
+  }
+  await load();
+}
 
 async function load(){
   try {
@@ -51,14 +64,8 @@ document.querySelector('#presentation-form').addEventListener('submit',async e=>
   setGlobalLoading(true, 'Adicionando apresentação...');
   try{
     const response=await fetch('/api/admin/presentations',{method:'POST',headers:headers(),body:JSON.stringify({title:document.querySelector('#title').value,presenter:document.querySelector('#presenter').value})});
-    if(response.ok){
-      e.currentTarget.reset();
-      show('Apresentação adicionada.');
-      await load();
-    }else{
-      show(response.status===401?'PIN incorreto.':'Não foi possível adicionar.');
-      await load();
-    }
+    if(response.ok) e.currentTarget.reset();
+    await handleResponse(response, 'Apresentação adicionada.');
   }catch{
     show('Erro de rede.');
     await load();
@@ -71,9 +78,7 @@ document.querySelector('#presentation-list').addEventListener('click',async e=>{
     setGlobalLoading(true, 'Iniciando votação...');
     try{
       const response=await fetch('/api/admin/session',{method:'PUT',headers:headers(),body:JSON.stringify({isOpen:true,presentationId:activateId})});
-      const body=await response.json().catch(()=>({}));
-      show(response.ok?'Apresentação liberada para votação!':body.message||'PIN incorreto.');
-      await load();
+      await handleResponse(response, 'Apresentação liberada para votação!');
     }catch{
       show('Erro de rede.');
       await load();
@@ -85,8 +90,7 @@ document.querySelector('#presentation-list').addEventListener('click',async e=>{
   setGlobalLoading(true, 'Excluindo apresentação...');
   try{
     const response=await fetch(`/api/admin/presentations/${removeId}`,{method:'DELETE',headers:headers()});
-    show(response.ok?'Apresentação excluída.':response.status===401?'PIN incorreto.':'Não é possível excluir agora.');
-    await load();
+    await handleResponse(response, 'Apresentação excluída.');
   }catch{
     show('Erro de rede.');
     await load();
@@ -98,8 +102,7 @@ document.querySelector('#stop-session').addEventListener('click',async()=>{
   setGlobalLoading(true, 'Pausando votação...');
   try{
     const response=await fetch('/api/admin/session',{method:'PUT',headers:headers(),body:JSON.stringify({isOpen:false,showResults:false})});
-    show(response.ok?'Apresentação retirada da votação.':'PIN incorreto.');
-    await load();
+    await handleResponse(response, 'Apresentação retirada da votação.');
   }catch{
     show('Erro de rede.');
     await load();
@@ -111,8 +114,7 @@ document.querySelector('#finish-event').addEventListener('click',async()=>{
   setGlobalLoading(true, 'Finalizando e gerando ranking...');
   try{
     const response=await fetch('/api/admin/session',{method:'PUT',headers:headers(),body:JSON.stringify({isOpen:false,showResults:true})});
-    show(response.ok?'Evento finalizado e ranking liberado.':'PIN incorreto.');
-    await load();
+    await handleResponse(response, 'Evento finalizado e ranking liberado.');
   }catch{
     show('Erro de rede.');
     await load();
@@ -124,8 +126,7 @@ document.querySelector('#clear-votes').addEventListener('click',async()=>{
   setGlobalLoading(true, 'Limpando votos do banco...');
   try{
     const response=await fetch('/api/admin/votes',{method:'DELETE',headers:headers()});
-    show(response.ok?'Votos apagados.':'PIN incorreto.');
-    await load();
+    await handleResponse(response, 'Votos apagados.');
   }catch{
     show('Erro de rede.');
     await load();
