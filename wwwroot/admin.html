@@ -23,6 +23,7 @@
         <span class="eyebrow">Acesso do público</span><h2>QR Code</h2>
         <img id="qr-code" alt="QR Code da página de votação">
         <a id="public-link" target="_blank" rel="noopener"></a>
+        <a href="/qrcode.html" target="_blank" class="secondary" style="display: inline-block; text-decoration: none; text-align: center; width: 100%; margin-top: 15px; padding: 10px; font-size: 0.9rem;">Abrir Tela de Projeção</a>
       </article>
     </section>
 
@@ -40,7 +41,10 @@
       <div class="section-heading"><div><span class="eyebrow">Ao vivo</span><h2>Ranking</h2></div><strong id="admin-total"></strong></div>
       <ol id="admin-ranking" class="ranking"></ol>
     </section>
-    <p id="admin-feedback" class="toast" role="status"></p>
+    <div id="admin-feedback" class="toast" role="status">
+      <span class="spinner" id="toast-spinner" style="display: none;"></span>
+      <span id="toast-text"></span>
+    </div>
   </main>
   <script src="/js/admin.js"></script>
 </body>

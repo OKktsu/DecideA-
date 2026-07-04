@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Acesse a Votação</title>
+  <link rel="stylesheet" href="/css/site.css">
+  <style>
+    body {
+      display: grid;
+      place-items: center;
+      min-height: 100vh;
+      margin: 0;
+      background: radial-gradient(circle at center, #edf5ef 0%, #d5e3d9 100%);
+      padding: 20px;
+    }
+    .display-card {
+      text-align: center;
+      max-width: 500px;
+      width: 100%;
+      padding: clamp(30px, 8vw, 50px);
+      border-radius: 28px;
+      background: rgba(255, 255, 255, 0.96);
+      box-shadow: 0 24px 64px rgba(20, 40, 32, 0.12);
+      border: 1px solid rgba(255, 255, 255, 0.8);
+      backdrop-filter: blur(10px);
+      transition: transform 0.3s ease;
+    }
+    .display-card:hover {
+      transform: translateY(-4px);
+    }
+    .display-logo {
+      margin-bottom: 24px;
+    }
+    .display-card h1 {
+      font-family: Georgia, serif;
+      font-size: clamp(2rem, 6vw, 2.8rem);
+      margin: 0 0 10px 0;
+      color: var(--ink);
+      line-height: 1.1;
+    }
+    .display-card p {
+      color: var(--muted);
+      font-size: 1.1rem;
+      margin: 0 0 32px 0;
+    }
+    .qr-container {
+      position: relative;
+      display: inline-block;
+      padding: 16px;
+      background: #fff;
+      border-radius: 20px;
+      border: 1px solid var(--line);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.04);
+      margin-bottom: 24px;
+    }
+    .qr-container img {
+      display: block;
+      width: 240px;
+      height: 240px;
+      border-radius: 10px;
+    }
+    .url-display {
+      display: inline-block;
+      padding: 10px 20px;
+      background: #edf5ef;
+      border-radius: 999px;
+      color: var(--green);
+      font-weight: 700;
+      font-size: 1rem;
+      text-decoration: none;
+      border: 1px solid #cce3d4;
+      transition: all 0.2s ease;
+      word-break: break-all;
+      max-width: 100%;
+    }
+    .url-display:hover {
+      background: var(--green);
+      color: #fff;
+      border-color: var(--green);
+    }
+    .live-status {
+      margin-top: 32px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 16px;
+      border-radius: 999px;
+      background: #f7f5ee;
+      border: 1px solid var(--line);
+      font-size: 0.9rem;
+      font-weight: 700;
+    }
+    .live-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--muted);
+    }
+    .live-dot.active {
+      background: var(--accent);
+      animation: pulse 1.5s infinite;
+    }
+    @keyframes pulse {
+      0% { box-shadow: 0 0 0 0 rgba(233, 93, 53, 0.7); }
+      70% { box-shadow: 0 0 0 8px rgba(233, 93, 53, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(233, 93, 53, 0); }
+    }
+  </style>
+</head>
+<body>
+  <main class="display-card">
+    <div class="display-logo">
+      <span class="eyebrow">Apresentações</span>
+    </div>
+    <h1>Vote Aqui</h1>
+    <p>Aponte a câmera do seu celular para o QR Code abaixo para participar e votar</p>
+    
+    <div class="qr-container">
+      <img id="qr-code" alt="QR Code da página de votação">
+    </div>
+    
+    <div>
+      <a id="public-link" class="url-display" target="_blank" rel="noopener">Carregando link...</a>
+    </div>
+
+    <div class="live-status">
+      <span id="live-dot" class="live-dot"></span>
+      <span id="status-text">Conectando...</span>
+    </div>
+  </main>
+
+  <script>
+    const publicUrl = new URL('/', location.href).href;
+    document.querySelector('#public-link').href = publicUrl;
+    document.querySelector('#public-link').textContent = publicUrl.replace(/^https?:\/\//, '');
+    document.querySelector('#qr-code').src = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(publicUrl)}`;
+
+    const statusText = document.querySelector('#status-text');
+    const liveDot = document.querySelector('#live-dot');
+
+    async function updateStatus() {
+      try {
+        const response = await fetch('/api/state');
+        if (!response.ok) throw new Error();
+        const state = await response.json();
+        
+        if (state.isOpen && state.activePresentation) {
+          statusText.textContent = `Votação Aberta: ${state.activePresentation.title}`;
+          liveDot.className = 'live-dot active';
+        } else if (state.showResults) {
+          statusText.textContent = 'Votação Encerrada (Ranking na Tela)';
+          liveDot.className = 'live-dot';
+        } else {
+          statusText.textContent = 'Aguardando início da votação';
+          liveDot.className = 'live-dot';
+        }
+      } catch (err) {
+        statusText.textContent = 'Sem conexão com o servidor';
+        liveDot.className = 'live-dot';
+      }
+    }
+
+    // Subscribe to SSE updates for real-time changes
+    const source = new EventSource('/api/events');
+    source.onmessage = updateStatus;
+    source.onerror = () => {
+      statusText.textContent = 'Reconectando ao servidor...';
+      liveDot.className = 'live-dot';
+    };
+
+    updateStatus();
+  </script>
+</body>
+</html>
