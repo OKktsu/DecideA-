@@ -11,7 +11,37 @@ if (firebaseEnabled)
     if (string.IsNullOrWhiteSpace(projectId))
         throw new InvalidOperationException("Firebase:ProjectId precisa ser configurado.");
     if (!string.IsNullOrWhiteSpace(credentialsPath) && !Path.IsPathRooted(credentialsPath))
-        credentialsPath = Path.GetFullPath(credentialsPath, builder.Environment.ContentRootPath);
+    {
+        var primaryPath = Path.GetFullPath(credentialsPath, builder.Environment.ContentRootPath);
+        if (File.Exists(primaryPath))
+        {
+            credentialsPath = primaryPath;
+        }
+        else
+        {
+            var fileName = Path.GetFileName(credentialsPath);
+            var renderSecretsPath = Path.Combine("/etc/secrets", fileName);
+            var rootPath = Path.Combine("/", fileName);
+            var repoRootPath = Path.GetFullPath(Path.Combine(builder.Environment.ContentRootPath, "..", fileName));
+
+            if (File.Exists(renderSecretsPath))
+            {
+                credentialsPath = renderSecretsPath;
+            }
+            else if (File.Exists(rootPath))
+            {
+                credentialsPath = rootPath;
+            }
+            else if (File.Exists(repoRootPath))
+            {
+                credentialsPath = repoRootPath;
+            }
+            else
+            {
+                credentialsPath = primaryPath;
+            }
+        }
+    }
 
     builder.Services.AddSingleton<IVotingStore>(_ => 
     {
