@@ -13,7 +13,28 @@ if (firebaseEnabled)
     if (!string.IsNullOrWhiteSpace(credentialsPath) && !Path.IsPathRooted(credentialsPath))
         credentialsPath = Path.GetFullPath(credentialsPath, builder.Environment.ContentRootPath);
 
-    builder.Services.AddSingleton<IVotingStore>(_ => new FirestoreVotingStore(projectId, credentialsPath));
+    builder.Services.AddSingleton<IVotingStore>(_ => 
+    {
+        try
+        {
+            Console.WriteLine($"[Firebase] Iniciando Firestore. ProjectId: '{projectId}', CredentialsPath: '{credentialsPath}'");
+            if (!string.IsNullOrWhiteSpace(credentialsPath))
+            {
+                bool exists = File.Exists(credentialsPath);
+                Console.WriteLine($"[Firebase] O arquivo de credenciais existe no caminho? {exists}");
+                if (exists)
+                {
+                    Console.WriteLine($"[Firebase] Tamanho do arquivo: {new FileInfo(credentialsPath).Length} bytes");
+                }
+            }
+            return new FirestoreVotingStore(projectId, credentialsPath);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[Firebase] ERRO AO INICIAR FIRESTORE: {ex}");
+            throw;
+        }
+    });
 }
 else
 {
