@@ -12,7 +12,7 @@ document.querySelector('#scores').innerHTML=Array.from({length:10},(_,i)=>`<span
 let lastActivePresentationId = null;
 
 async function load(){
-  const state=await fetch('/api/state').then(r=>r.json());
+  const state=await fetch('/api/state?_='+Date.now()).then(r=>r.json());
   const hasActiveVote=state.isOpen&&state.activePresentation;
 
   if (hasActiveVote && state.activePresentationId !== lastActivePresentationId) {
@@ -38,7 +38,7 @@ async function load(){
 document.querySelector('#vote-form').addEventListener('submit',async e=>{
   e.preventDefault(); feedback.textContent='Registrando…';
   const data=new FormData(e.currentTarget);
-  const state=await fetch('/api/state').then(r=>r.json());
+  const state=await fetch('/api/state?_='+Date.now()).then(r=>r.json());
   if(!state.isOpen||!state.activePresentationId)return load();
   const response=await fetch('/api/votes',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({presentationId:state.activePresentationId,score:Number(data.get('score')),voterId})});
   const body=await response.json(); feedback.textContent=body.message;
@@ -47,7 +47,55 @@ document.querySelector('#vote-form').addEventListener('submit',async e=>{
 
 function renderRanking(state){
   document.querySelector('#total-votes').textContent=`${state.totalVotes} voto${state.totalVotes===1?'':'s'}`;
-  document.querySelector('#ranking').innerHTML=state.presentations.length?state.presentations.map(p=>`<li><div><b>${escapeHtml(p.title)}</b><small>${p.voteCount} voto${p.voteCount===1?'':'s'}${p.presenter?' · '+escapeHtml(p.presenter):''}</small></div><strong>${Number(p.average).toFixed(1)}</strong></li>`).join(''):'<p>Nenhuma apresentação cadastrada.</p>';
+  
+  if (!state.presentations || state.presentations.length === 0) {
+    document.querySelector('#ranking').innerHTML = '<p>Nenhuma apresentação cadastrada.</p>';
+    return;
+  }
+  
+  let html = '';
+  const top3 = state.presentations.slice(0, 3);
+  const others = state.presentations.slice(3);
+  
+  if (top3.length > 0) {
+    html += '<div class="podium-container">';
+    top3.forEach((p, index) => {
+      const rank = index + 1;
+      let badgeHtml = '';
+      let badgeClass = '';
+      if (rank === 1) {
+        badgeHtml = `<div class="podium-badge"><svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4l3 12h14l3-12-6 7-4-7-4 7-6-7z"/><path d="M3 20h18"/></svg></div>`;
+        badgeClass = 'gold';
+      } else if (rank === 2) {
+        badgeClass = 'silver';
+      } else if (rank === 3) {
+        badgeClass = 'bronze';
+      }
+      
+      html += `<div class="podium-col ${badgeClass}">
+        <div class="podium-details">
+          <h3 class="podium-name">${escapeHtml(p.title)}</h3>
+          ${p.presenter ? `<span class="podium-team-presenter">${escapeHtml(p.presenter)}</span>` : ''}
+          <div class="podium-score-row">
+            <span class="podium-avg-score">${Number(p.average).toFixed(1)}</span>
+          </div>
+        </div>
+        <div class="podium-stand">
+          ${badgeHtml}
+          <div class="podium-number">${rank}</div>
+        </div>
+      </div>`;
+    });
+    html += '</div>';
+  }
+  
+  if (others.length > 0) {
+    html += '<ol class="ranking others-list" style="counter-reset: rank 3;">';
+    html += others.map(p => `<li><div><b>${escapeHtml(p.title)}</b><small>${p.voteCount} voto${p.voteCount===1?'':'s'}${p.presenter?' · '+escapeHtml(p.presenter):''}</small></div><strong>${Number(p.average).toFixed(1)}</strong></li>`).join('');
+    html += '</ol>';
+  }
+  
+  document.querySelector('#ranking').innerHTML = html;
 }
 function escapeHtml(value){const el=document.createElement('div');el.textContent=value;return el.innerHTML}
 new EventSource('/api/events').onmessage=load;

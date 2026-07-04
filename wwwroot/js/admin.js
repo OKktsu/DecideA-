@@ -44,7 +44,7 @@ async function handleResponse(response, successMsg) {
 
 async function load(){
   try {
-    currentState=await fetch('/api/state').then(r=>r.json());
+    currentState=await fetch('/api/state?_='+Date.now()).then(r=>r.json());
     const active=currentState.activePresentation;
     document.querySelector('#session-title').textContent=currentState.isOpen&&active?active.title:currentState.showResults?'Evento finalizado':'Nenhuma equipe em votação';
     document.querySelector('#session-copy').textContent=currentState.isOpen&&active?'Esta equipe está aparecendo agora para todos os participantes.':currentState.showResults?'O ranking final está visível para o público.':'Escolha abaixo qual apresentação o público deve avaliar.';
@@ -53,7 +53,55 @@ async function load(){
     document.querySelector('#presentation-form').querySelectorAll('input,button').forEach(el=>el.disabled=currentState.isOpen);
     document.querySelector('#presentation-list').innerHTML=currentState.presentations.map(p=>`<div class="presentation-row ${currentState.isOpen&&currentState.activePresentationId===p.id?'is-active':''}"><div><b>${escapeHtml(p.title)}</b><small>${escapeHtml(p.presenter||'Sem apresentador')} · ${p.voteCount} voto${p.voteCount===1?'':'s'}</small></div><div class="row-actions"><button class="vote-team" data-activate="${p.id}" ${currentState.isOpen&&currentState.activePresentationId===p.id?'disabled':''}>${currentState.isOpen&&currentState.activePresentationId===p.id?'Em votação':'Colocar em votação'}</button><button class="icon-button" data-remove="${p.id}" ${currentState.isOpen||p.voteCount?'disabled':''}>Excluir</button></div></div>`).join('')||'<p>Nenhuma apresentação cadastrada.</p>';
     document.querySelector('#admin-total').textContent=`${currentState.totalVotes} voto${currentState.totalVotes===1?'':'s'}`;
-    document.querySelector('#admin-ranking').innerHTML=currentState.presentations.map(p=>`<li><div><b>${escapeHtml(p.title)}</b><small>${p.voteCount} voto${p.voteCount===1?'':'s'}</small></div><strong>${Number(p.average).toFixed(1)}</strong></li>`).join('');
+    
+    // Render Admin Ranking with Podium
+    let html = '';
+    const presentations = currentState.presentations;
+    if (!presentations || presentations.length === 0) {
+      html = '<p>Nenhuma apresentação cadastrada.</p>';
+    } else {
+      const top3 = presentations.slice(0, 3);
+      const others = presentations.slice(3);
+      
+      if (top3.length > 0) {
+        html += '<div class="podium-container">';
+        top3.forEach((p, index) => {
+          const rank = index + 1;
+          let badgeHtml = '';
+          let badgeClass = '';
+          if (rank === 1) {
+            badgeHtml = `<div class="podium-badge"><svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4l3 12h14l3-12-6 7-4-7-4 7-6-7z"/><path d="M3 20h18"/></svg></div>`;
+            badgeClass = 'gold';
+          } else if (rank === 2) {
+            badgeClass = 'silver';
+          } else if (rank === 3) {
+            badgeClass = 'bronze';
+          }
+          
+          html += `<div class="podium-col ${badgeClass}">
+            <div class="podium-details">
+              <h3 class="podium-name">${escapeHtml(p.title)}</h3>
+              ${p.presenter ? `<span class="podium-team-presenter">${escapeHtml(p.presenter)}</span>` : ''}
+              <div class="podium-score-row">
+                <span class="podium-avg-score">${Number(p.average).toFixed(1)}</span>
+              </div>
+            </div>
+            <div class="podium-stand">
+              ${badgeHtml}
+              <div class="podium-number">${rank}</div>
+            </div>
+          </div>`;
+        });
+        html += '</div>';
+      }
+      
+      if (others.length > 0) {
+        html += '<ol class="ranking others-list" style="counter-reset: rank 3;">';
+        html += others.map(p => `<li><div><b>${escapeHtml(p.title)}</b><small>${p.voteCount} voto${p.voteCount===1?'':'s'}${p.presenter?' · '+escapeHtml(p.presenter):''}</small></div><strong>${Number(p.average).toFixed(1)}</strong></li>`).join('');
+        html += '</ol>';
+      }
+    }
+    document.querySelector('#admin-ranking').innerHTML = html;
   } catch (err) {
     show('Erro ao conectar com o servidor.');
   }
